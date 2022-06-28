@@ -10,6 +10,7 @@ var mongoose = require('mongoose');
 //import Model too
 const { body, validationResult } = require('express-validator');
 const user = require("../models/user");
+const { link } = require("fs");
 
 function get_errors (err_array) {
     let err = [];
@@ -37,16 +38,18 @@ exports.login_get = function (req, res) {
 
 exports.login_post = async (req, res) => {
     var user = await User.findOne({email: req.body.email});
+    console.log(1);
     if (user) {
         const validpass = await bcrypt.compare(req.body.password, user.password);
+        console.log(2);
+        console.log(validpass);
         if (validpass) {
             req.session.user = user;
+            console.log(3);
             res.redirect('/homepage')
         }
     }
-    else {
         res.render('login', {title: 'Login', msg: ['Invalid email or password']})
-    }
 }
 
 exports.signup_get = (req, res) => {
@@ -113,31 +116,82 @@ exports.signup_post = [
 ]
 
 exports.reset_password_get = (req, res) => {
-    var id = req.params.id;
-    // confirm if id is valid
-    // if not return error page
-    //if valid, return 
-    res.render('reset_password', {title: 'Reset Password'})
+    var uuid = req.params.id;
+
+    User.findOne({'reset_link': uuid})
+    .exec( function (err, user) {
+        if (err) { next(err)}
+
+        if (user) {
+            req.anon = user;
+            res.render('reset_password', {title: 'Reset Password'});
+        }
+        else { 
+        res.redirect('/forgot_password')
+    }
+    })
 }
 
-exports.reset_password_post = (req, res) => {
-    var id = req.params.id;
-    //confirm details in database
-    //if error, return login
-    // if ok, redirect to homepage
-    res.render('reset_password', {title: 'Reset Password'})
-}
+exports.reset_password_post = [
+
+    body('password1').trim().escape().isLength({ min: 8 }).withMessage('Password must be at least 8 characters.'),
+
+    (req, res, next) => {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            let msg = get_errors(errors.array());
+            res.render('reset_password', {title: 'Reset Password', msg: msg});
+            delete msg;
+            return;
+        }
+
+        else if (req.body.password1 != req.body.password2) {
+            res.render('reset_password', {title: 'Reset Password', msg: ['Passwords dont match']});
+            return
+        }
+        else {
+            const salt = bcrypt.genSaltSync(10);
+            User.findOne({'reset_link': req.params.id})
+            .exec (function (err, user) {
+                if (err) { return next(err)}
+
+                if (user) {
+                    user.password = bcrypt.hashSync(req.body.password1, salt);
+                    user.reset_link = crypto.randomBytes(20).toString('hex');;
+                    user.save(function (err) {
+                        if (err) { return next(err)}
+                        res.redirect('/login');
+                    });
+                }
+            })
+        }
+    }
+]
 
 exports.forgot_password_get = (req, res) => {
-    res.render('forgot_password_get', {title: 'Forgot Password'})
+    res.render('forgot_password', {title: 'Forgot Password'})
 }
 
 exports.forgot_password_post = (req, res) => {
     //check if form email exist in database
-    //confirm details in database
-    //if error, return login
-    // if ok, redirect to homepage
-    res.render('forgot_password_get', {title: 'Forgot Password'})
+    User.findOne({'email': req.body.email})
+    .exec( function (err, user) {
+        if (err) {return next(err);}
+        if (user) {
+            let uuid = crypto.randomBytes(20).toString('hex');
+            user.reset_link = uuid;
+            user.save( function (err) {
+                if (err) { next(err)}
+                uuid_link = `/reset_password/${uuid}`
+                res.render('forgot_password', {title: 'Forgot Password', uuid: uuid_link})
+                return
+            })
+        }
+        else{
+        res.redirect('/signup')
+    }
+    })
 }
 
 exports.email_OTP_get = (req, res) => {
@@ -166,6 +220,7 @@ exports.email_OTP_post = (req, res) => {
             if (user.verified) { res.redirect('/homepage'); return;}
             if (user.OTP == req.body.otp) {
                 user.verified = true;
+                user.OTP = generateOTP();
                 user.save(function (err) {
                     if (err) { return next(err)}
                     res.redirect('/homepage')
