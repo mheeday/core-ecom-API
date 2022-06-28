@@ -1,0 +1,12 @@
+extends layout
+
+block content 
+    h1=title
+
+    form(action="", method="post")
+        div.form-group
+            label(for='otp') OTP:
+            input(name = "otp" type = "number" maxlength = '6' required placeholder = "OTP")
+                
+        button.btn.btn-primary(type='submit') Submit
+

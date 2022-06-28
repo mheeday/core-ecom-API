@@ -1,0 +1,33 @@
+extends admin_layout
+
+block content 
+    h1=title
+
+    div(style='margin-left:20px;margin-top:20px')
+
+        h4 Items
+
+        table(class='table')
+            thead
+                tr
+                    th(scope="col") S/N
+                    th(scope="col") User
+                    th(scope="col") Items
+                    th(scope="col") Date Ordered
+            tbody
+                if orders
+                    each order, index in orders
+                        tr 
+                            th(scope="row") #{index+1}
+                            td #{order.user.name}
+                            td 
+                                ul(class="list-group")
+                                    each item in order.items 
+                                        li(class="list-group-item") #{item.name} -  $#{item.price}
+                            td #{order.date_ordered}
+                else
+                    tr 
+                        th(scope="row") 
+                        td No Order Yet                   
+    hr
+

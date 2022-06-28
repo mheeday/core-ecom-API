@@ -1,0 +1,27 @@
+extends layout
+
+block content 
+    h1=title
+
+    form(action="", method="post")
+        div.form-group
+            label(for='first_name') First Name: 
+            input(type="text" placeholder=" First Name (John)" name='first_name' required='true')
+        
+        div.form-group
+            label(for='last_name') Last Name: 
+            input(type="text" placeholder=" Last Name (Smith)" name='last_name' required='true')
+
+        div.form-group
+            label(for='email') Email Address: 
+            input(type="email" placeholder=" Email Address (abcd@fgh.com)" name='email' required='true')
+
+        div.form-group
+            label(for='password') Password:
+            input(name = "password" type = "password" required placeholder = "Password")
+
+        button.btn.btn-primary(type='submit') Submit
+
+    
+    a(href='/forgot_password') Forgot Password?
+
