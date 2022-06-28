@@ -5,17 +5,9 @@ var User = express('../models/user');
 var adminController = require('../controllers/adminController')
 
 function checkSignIn(req, res, next){
-  if (req.session.user) {
-    User.findById(req.session.user.id)
-    .exec( function (err, user) {
-      if (err) { res.redirect('/admin/admin_login');}
-
-      if (user.admin) {
+  if (req.session.user.admin) {
         res.redirect('/admin/data');
       }
-    })
-   next();     //If session exists, proceed to page
-  }
   else {
    res.redirect('/admin/admin_login');
    //next(err);  //Error, trying to access unauthorized page!
